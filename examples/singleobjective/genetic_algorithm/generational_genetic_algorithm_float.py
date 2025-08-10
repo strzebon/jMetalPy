@@ -5,7 +5,7 @@ from jmetal.problem.singleobjective.unconstrained import Rastrigin
 from jmetal.util.termination_criterion import StoppingByEvaluations
 
 if __name__ == "__main__":
-    problem = Rastrigin(10)
+    problem = Rastrigin(1)
 
     algorithm = GeneticAlgorithm(
         problem=problem,
@@ -19,8 +19,8 @@ if __name__ == "__main__":
     algorithm.run()
     result = algorithm.result()
 
-    print("Algorithm: {}".format(algorithm.get_name()))
-    print("Problem: {}".format(problem.name()))
-    print("Solution: {}".format(result.variables))
     print("Fitness: {}".format(result.objectives[0]))
     print("Computing time: {}".format(algorithm.total_computing_time))
+    print("Tabu list max: {}".format(max(algorithm.tabu.values())))
+    print("Tabu counter: {}".format(algorithm.tabu_counter))
+    print("Skip counter: {}".format(algorithm.skip_counter))

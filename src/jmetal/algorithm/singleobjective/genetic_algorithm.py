@@ -60,6 +60,29 @@ class GeneticAlgorithm(EvolutionaryAlgorithm[S, R]):
         if self.mating_pool_size < self.crossover_operator.get_number_of_children():
             self.mating_pool_size = self.crossover_operator.get_number_of_children()
 
+        self.lower_bound = -5.12
+        self.upper_bound = 5.12
+        self.n_buckets = 10**6
+        self.tabu = {}
+        self.tabu_threshold = 1.0
+        self.pheromone_boost = 1.0
+        self.evaporation_rate = 0.1
+        self.tabu_counter = 0
+        self.skip_counter = 0
+
+    def bin_vector(self, solution: S):
+        return int((solution.variables[0] - self.lower_bound) // ((self.upper_bound - self.lower_bound) / self.n_buckets))
+
+    def calculate_pheromones(self, population: List[S]):
+        for key in list(self.tabu.keys()):
+            self.tabu[key] *= (1 - self.evaporation_rate)
+
+        for solution in population:
+            key = self.bin_vector(solution)
+            if key not in self.tabu:
+                self.tabu[key] = 0.0
+            self.tabu[key] += self.pheromone_boost
+
     def create_initial_solutions(self) -> List[S]:
         return [self.population_generator.new(self.problem) for _ in range(self.population_size)]
 
@@ -94,9 +117,15 @@ class GeneticAlgorithm(EvolutionaryAlgorithm[S, R]):
 
             for solution in offspring:
                 self.mutation_operator.execute(solution)
+                key = self.bin_vector(solution)
+                if key in self.tabu and self.tabu[key] > self.tabu_threshold:
+                    self.tabu_counter += 1
+                    continue
                 offspring_population.append(solution)
                 if len(offspring_population) >= self.offspring_population_size:
                     break
+            else:
+                self.skip_counter += 1
 
         return offspring_population
 
@@ -104,6 +133,8 @@ class GeneticAlgorithm(EvolutionaryAlgorithm[S, R]):
         population.extend(offspring_population)
 
         population.sort(key=cmp_to_key(self.solution_comparator.compare))
+
+        self.calculate_pheromones(population[: self.population_size])
 
         return population[: self.population_size]
 
