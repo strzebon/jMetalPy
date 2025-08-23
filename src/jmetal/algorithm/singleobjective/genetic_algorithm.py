@@ -10,6 +10,7 @@ from jmetal.util.comparator import Comparator, ObjectiveComparator
 from jmetal.util.evaluator import Evaluator
 from jmetal.util.generator import Generator
 from jmetal.util.termination_criterion import TerminationCriterion
+from decimal import Decimal
 
 S = TypeVar("S")
 R = TypeVar("R")
@@ -20,6 +21,23 @@ R = TypeVar("R")
    :synopsis: Implementation of Genetic Algorithms.
 .. moduleauthor:: Antonio J. Nebro <antonio@lcc.uma.es>, Antonio Benítez-Hidalgo <antonio.b@uma.es>
 """
+
+
+def leading_zeros_after_decimal(num: int) -> int:
+    d = Decimal(str(num)).normalize()
+    s = str(d)
+
+    if "." not in s:
+        return 0
+
+    frac = s.split(".")[1]
+    count = 1
+    for ch in frac:
+        if ch == "0":
+            count += 1
+        else:
+            break
+    return count
 
 
 class GeneticAlgorithm(EvolutionaryAlgorithm[S, R]):
@@ -62,7 +80,8 @@ class GeneticAlgorithm(EvolutionaryAlgorithm[S, R]):
 
         self.lower_bound = -5.12
         self.upper_bound = 5.12
-        self.n_buckets = 10**6
+        self.n_buckets = 10**2
+        self.avg = 0
         self.tabu = {}
         self.tabu_threshold = 1.0
         self.pheromone_boost = 1.0
@@ -135,6 +154,19 @@ class GeneticAlgorithm(EvolutionaryAlgorithm[S, R]):
         population.sort(key=cmp_to_key(self.solution_comparator.compare))
 
         self.calculate_pheromones(population[: self.population_size])
+
+        if self.evaluations % 10_000 == 0:
+            self.avg = 0
+            for solution in population[: self.population_size]:
+                self.avg += solution.variables[0]
+            self.avg /= self.population_size
+            print("Average variable: {}".format(self.avg))
+            num_of_zeros = leading_zeros_after_decimal(self.avg)
+            if 10 ** (num_of_zeros + 3) > self.n_buckets:
+                self.n_buckets = 10 ** (num_of_zeros + 3)
+                print("change nubmer of buckets: {}".format(self.n_buckets))
+                self.tabu = {}
+
 
         return population[: self.population_size]
 
