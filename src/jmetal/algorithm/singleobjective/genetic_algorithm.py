@@ -1,5 +1,7 @@
 from functools import cmp_to_key
 from typing import List, TypeVar
+import random
+import copy
 
 from jmetal.config import store
 from jmetal.core.algorithm import EvolutionaryAlgorithm
@@ -60,28 +62,42 @@ class GeneticAlgorithm(EvolutionaryAlgorithm[S, R]):
         if self.mating_pool_size < self.crossover_operator.get_number_of_children():
             self.mating_pool_size = self.crossover_operator.get_number_of_children()
 
-        self.lower_bound = -5.12
-        self.upper_bound = 5.12
-        self.n_buckets = 10**6
-        self.tabu = {}
-        self.tabu_threshold = 1.0
-        self.pheromone_boost = 1.0
-        self.evaporation_rate = 0.1
+        self.tabu = [0.0 for _ in range(10)]
+        self.tabu_rounding = 3
         self.tabu_counter = 0
-        self.skip_counter = 0
+        self.max_steps = 5
+        self.n_neighbors = 5
+        self.step_size = 0.1
 
-    def bin_vector(self, solution: S):
-        return int((solution.variables[0] - self.lower_bound) // ((self.upper_bound - self.lower_bound) / self.n_buckets))
+    def tabu_search(self, child: S):
+        current = child
+        best = child
+        best_fitness = child.objectives[0]
+        for _ in range(self.max_steps):
+            neighbours = []
+            for i in range(self.n_neighbors):
+                variable = current.variables[0] + random.uniform(-self.step_size, self.step_size)
+                n = copy.copy(current)
+                n.variables[0] = variable
+                self.problem.evaluate(n)
+                neighbours.append(n)
+            neighbours.sort(key=cmp_to_key(self.solution_comparator.compare))
+            for n in neighbours:
+                rounded = round(n.variables[0], self.tabu_rounding)
+                if rounded not in self.tabu:
+                    self.tabu.pop(0)
+                    self.tabu.append(rounded)
+                    current = n
+                    break
+                self.tabu_counter += 1
+            else:
+                current = neighbours[0]
 
-    def calculate_pheromones(self, population: List[S]):
-        for key in list(self.tabu.keys()):
-            self.tabu[key] *= (1 - self.evaporation_rate)
+            fitness = current.objectives[0]
+            if fitness < best_fitness:
+                best, best_fitness = current, fitness
 
-        for solution in population:
-            key = self.bin_vector(solution)
-            if key not in self.tabu:
-                self.tabu[key] = 0.0
-            self.tabu[key] += self.pheromone_boost
+        return best
 
     def create_initial_solutions(self) -> List[S]:
         return [self.population_generator.new(self.problem) for _ in range(self.population_size)]
@@ -117,24 +133,17 @@ class GeneticAlgorithm(EvolutionaryAlgorithm[S, R]):
 
             for solution in offspring:
                 self.mutation_operator.execute(solution)
-                key = self.bin_vector(solution)
-                if key in self.tabu and self.tabu[key] > self.tabu_threshold:
-                    self.tabu_counter += 1
-                    continue
                 offspring_population.append(solution)
                 if len(offspring_population) >= self.offspring_population_size:
                     break
-            else:
-                self.skip_counter += 1
 
-        return offspring_population
+        child = offspring_population[0]
+        return [self.tabu_search(child)]
 
     def replacement(self, population: List[S], offspring_population: List[S]) -> List[S]:
         population.extend(offspring_population)
 
         population.sort(key=cmp_to_key(self.solution_comparator.compare))
-
-        self.calculate_pheromones(population[: self.population_size])
 
         return population[: self.population_size]
 

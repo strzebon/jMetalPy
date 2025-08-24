@@ -20,7 +20,7 @@ if __name__ == "__main__":
     result = algorithm.result()
 
     print("Fitness: {}".format(result.objectives[0]))
+    print("Variable: {}".format(result.variables[0]))
     print("Computing time: {}".format(algorithm.total_computing_time))
-    print("Tabu list max: {}".format(max(algorithm.tabu.values())))
     print("Tabu counter: {}".format(algorithm.tabu_counter))
-    print("Skip counter: {}".format(algorithm.skip_counter))
+    print(algorithm.tabu)
