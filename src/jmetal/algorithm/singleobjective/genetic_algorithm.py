@@ -80,17 +80,18 @@ class GeneticAlgorithm(EvolutionaryAlgorithm[S, R]):
 
         self.lower_bound = -5.12
         self.upper_bound = 5.12
-        self.n_buckets = 10**2
         self.avg = 0
+        self.n = problem.number_of_variables()
+        self.n_buckets = [10 ** 2 for _ in range(self.n)]
         self.tabu = {}
-        self.tabu_threshold = 1.0
+        self.tabu_threshold = 20.0
         self.pheromone_boost = 1.0
         self.evaporation_rate = 0.1
         self.tabu_counter = 0
         self.skip_counter = 0
 
     def bin_vector(self, solution: S):
-        return int((solution.variables[0] - self.lower_bound) // ((self.upper_bound - self.lower_bound) / self.n_buckets))
+        return tuple(int((solution.variables[i] - self.lower_bound) // ((self.upper_bound - self.lower_bound) / self.n_buckets[i])) for i in range(self.n))
 
     def calculate_pheromones(self, population: List[S]):
         for key in list(self.tabu.keys()):
@@ -134,17 +135,18 @@ class GeneticAlgorithm(EvolutionaryAlgorithm[S, R]):
 
             offspring = self.crossover_operator.execute(parents)
 
-            for solution in offspring:
-                self.mutation_operator.execute(solution)
-                key = self.bin_vector(solution)
-                if key in self.tabu and self.tabu[key] > self.tabu_threshold:
-                    self.tabu_counter += 1
-                    continue
-                offspring_population.append(solution)
-                if len(offspring_population) >= self.offspring_population_size:
-                    break
-            else:
-                self.skip_counter += 1
+            while len(offspring_population) < self.offspring_population_size:
+                for solution in offspring:
+                    self.mutation_operator.execute(solution)
+                    key = self.bin_vector(solution)
+                    if key in self.tabu and self.tabu[key] > self.tabu_threshold:
+                        self.tabu_counter += 1
+                        continue
+                    offspring_population.append(solution)
+                    if len(offspring_population) >= self.offspring_population_size:
+                        break
+                else:
+                    self.skip_counter += 1
 
         return offspring_population
 
@@ -156,16 +158,17 @@ class GeneticAlgorithm(EvolutionaryAlgorithm[S, R]):
         self.calculate_pheromones(population[: self.population_size])
 
         if self.evaluations % 10_000 == 0:
-            self.avg = 0
-            for solution in population[: self.population_size]:
-                self.avg += solution.variables[0]
-            self.avg /= self.population_size
-            print("Average variable: {}".format(self.avg))
-            num_of_zeros = leading_zeros_after_decimal(self.avg)
-            if 10 ** (num_of_zeros + 3) > self.n_buckets:
-                self.n_buckets = 10 ** (num_of_zeros + 3)
-                print("change nubmer of buckets: {}".format(self.n_buckets))
-                self.tabu = {}
+            for i in range(self.n):
+                self.avg = 0
+                for solution in population[: self.population_size]:
+                    self.avg += solution.variables[i]
+                self.avg /= self.population_size
+                print("Average variable: {}".format(self.avg))
+                num_of_zeros = leading_zeros_after_decimal(self.avg)
+                if 10 ** (num_of_zeros + 3) > self.n_buckets[i]:
+                    self.n_buckets[i] = 10 ** (num_of_zeros + 3)
+                    print("change nubmer of buckets: {}".format(self.n_buckets[i]))
+                    self.tabu = {}
 
 
         return population[: self.population_size]

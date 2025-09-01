@@ -3,12 +3,15 @@ from jmetal.operator.crossover import SBXCrossover
 from jmetal.operator.mutation import PolynomialMutation
 from jmetal.problem.singleobjective.unconstrained import Rastrigin
 from jmetal.util.termination_criterion import StoppingByEvaluations
+import csv
 
 if __name__ == "__main__":
-    problem = Rastrigin(1)
-
+    problem = Rastrigin(100)
+    # with open("results.csv", mode="w", newline="") as file:
+    #     writer = csv.writer(file)
+    #     writer.writerow(["Iteration", "Fitness"])
     avg_fitness = 0
-    for i in range(100):
+    for i in range(1):
         algorithm = GeneticAlgorithm(
             problem=problem,
             population_size=100,
@@ -25,6 +28,8 @@ if __name__ == "__main__":
         print("Tabu list max: {}".format(max(algorithm.tabu.values())))
         print("Tabu counter: {}".format(algorithm.tabu_counter))
         print("Skip counter: {}".format(algorithm.skip_counter))
-        avg_fitness += result.objectives[0]
+        fitness = result.objectives[0]
+        avg_fitness += fitness
+        # writer.writerow([i + 1, fitness])
     avg_fitness /= 100
     print("Average fitness: {}".format(avg_fitness))
