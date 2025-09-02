@@ -1,2 +1,2 @@
 ## Plot
-<img src = "plot.png" width=450>
+<img src = "plot.png">
