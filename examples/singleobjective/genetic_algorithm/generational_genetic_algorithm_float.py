@@ -14,6 +14,7 @@ if __name__ == "__main__":
         while n_problem <= 128:
             problem = Rastrigin(n_problem)
             avg_fitness = 0
+            print("n_problem:", n_problem)
             for i in range(10):
                 algorithm = GeneticAlgorithm(
                     problem=problem,
@@ -38,3 +39,4 @@ if __name__ == "__main__":
             avg_fitness /= 10
             print("Average fitness: {}".format(avg_fitness))
             n_problem *= 2
+        print()

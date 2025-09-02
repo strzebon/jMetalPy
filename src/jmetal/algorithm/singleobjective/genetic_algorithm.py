@@ -85,7 +85,7 @@ class GeneticAlgorithm(EvolutionaryAlgorithm[S, R]):
         self.n = problem.number_of_variables()
         self.n_buckets = [10 ** 2 for _ in range(self.n)]
         self.tabu = {}
-        self.tabu_threshold = 20.0
+        self.tabu_threshold = 5.0
         self.pheromone_boost = 1.0
         self.evaporation_rate = 0.1
         self.tabu_counter = 0
