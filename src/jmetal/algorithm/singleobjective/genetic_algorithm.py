@@ -1,3 +1,4 @@
+import math
 from functools import cmp_to_key
 from typing import List, TypeVar
 
@@ -23,9 +24,9 @@ R = TypeVar("R")
 """
 
 
-def leading_zeros_after_decimal(num: int) -> int:
+def leading_zeros_after_decimal(num: float) -> int:
     d = Decimal(str(num)).normalize()
-    s = str(d)
+    s = format(d, 'f')
 
     if "." not in s:
         return 0
@@ -96,6 +97,8 @@ class GeneticAlgorithm(EvolutionaryAlgorithm[S, R]):
     def calculate_pheromones(self, population: List[S]):
         for key in list(self.tabu.keys()):
             self.tabu[key] *= (1 - self.evaporation_rate)
+            if self.tabu[key] <= 0.01:
+                del self.tabu[key]
 
         for solution in population:
             key = self.bin_vector(solution)
