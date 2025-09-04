@@ -7,15 +7,13 @@ import csv
 
 if __name__ == "__main__":
 
-    with open("results.csv", mode="w", newline="") as file:
+    with open("results_per_eval.csv", mode="w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["Size", "Fitness", "Time"])
-        n_problem = 1
-        while n_problem <= 128:
+        writer.writerow(["Size", "Evaluations", "Fitness"])
+
+        for n_problem in [1, 2, 10, 100]:
             problem = Rastrigin(n_problem)
-            avg_fitness = 0
-            print("n_problem:", n_problem)
-            for i in range(10):
+            for _ in range(10):
                 algorithm = GeneticAlgorithm(
                     problem=problem,
                     population_size=100,
@@ -25,18 +23,5 @@ if __name__ == "__main__":
                     termination_criterion=StoppingByEvaluations(max_evaluations=150000),
                 )
                 algorithm.run()
-                result = algorithm.result()
-
-                computing_time = algorithm.total_computing_time
-
-                print("Fitness: {}".format(result.objectives[0]))
-                print("Computing time: {}".format(computing_time))
-                print("Tabu counter: {}".format(algorithm.tabu_counter))
-                print("Skip counter: {}".format(algorithm.skip_counter))
-                fitness = result.objectives[0]
-                avg_fitness += fitness
-                writer.writerow([n_problem, fitness, computing_time])
-            avg_fitness /= 10
-            print("Average fitness: {}".format(avg_fitness))
-            n_problem *= 2
-        print()
+                for i, fitness in enumerate(algorithm.fitnesses):
+                    writer.writerow([n_problem, (i+1) * 5000, fitness])

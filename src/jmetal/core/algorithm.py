@@ -111,6 +111,7 @@ class EvolutionaryAlgorithm(Algorithm[S, R], ABC):
         self.problem = problem
         self.population_size = population_size
         self.offspring_population_size = offspring_population_size
+        self.fitnesses = []
 
     @abstractmethod
     def selection(self, population: List[S]) -> List[S]:
@@ -153,6 +154,9 @@ class EvolutionaryAlgorithm(Algorithm[S, R], ABC):
 
         observable_data = self.observable_data()
         self.observable.notify_all(**observable_data)
+
+        if self.evaluations % 5_000 == 0:
+            self.fitnesses.append(self.solutions[0].objectives[0])
 
     @property
     def label(self) -> str:
